@@ -22,6 +22,22 @@ class HTTPServer:
         self.server_socket.listen(5)
         print(f"Server listens on https://{self.host}:{self.port}")
 
+        try:
+            while True:
+                client_socket, client_address = self.server_socket.accept()
+                print(f"Connection from: {client_address}")
+
+                client_thread = threading.Thread(target=self.handle_client, args=(client_socket,))
+
+        except KeyboardInterrupt:
+            print("\nShutting down the server")
+        finally:
+            self.server_socket.close()
+
+    def handle_client(self, client_socket):
+        pass
+
+# Run server
 if __name__ == '__main__':
     server = HTTPServer(host='127.0.0.1', port=8080)
     server.start_server()
