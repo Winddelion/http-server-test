@@ -28,6 +28,7 @@ class HTTPServer:
                 print(f"Connection from: {client_address}")
 
                 client_thread = threading.Thread(target=self.handle_client, args=(client_socket,))
+                client_thread.start()
 
 
         except KeyboardInterrupt:
@@ -35,8 +36,8 @@ class HTTPServer:
         finally:
             self.server_socket.close()
 
-    def http_parse(self, request): #Parsing http into a tuple
-        http_lines = request.decode("utf-8").split("\r\n")
+    def http_parse(self, request: str): #Parsing http into a tuple
+        http_lines = request.split("\r\n")
 
         empty_index = http_lines.index('') if '' in http_lines else -1
 
@@ -46,6 +47,17 @@ class HTTPServer:
             return header, body
         else:
             return http_lines, None
+
+    def request_line_parse(self, head: list):
+        if not head:
+            raise ValueError("Empty header list")
+        request_line = head[0]
+        request_parts = request_line.split(' ')
+        if len(request_parts) >= 2:
+            method = request_parts[0]
+            path = request_parts[1]
+            return (method, path)
+        return ("GET", "/") # Fallback
 
 
     def handle_client(self, client_socket):
@@ -63,17 +75,36 @@ class HTTPServer:
 
         try:
 
-            request_data = client_socket.recv(4096).decode('utf-8') #Reading 4096 bytes of data, decoding it into utf-8
+            request_data = client_socket.recv(4096).decode("utf-8") #Reading 4096 bytes of data, decoding it into utf-8
             if not request_data:
                 return "No request_data recieved"
         
             #Parsing HTTP(oh boy)
             header, body = self.http_parse(request_data)
+            method, path = self.request_line_parse(header) #For some reason pyright keeps flagging it as an error yet is still works
+
             
+            #Respond to request line
+            if path == "/":
+                response_body = "<h1>Welcome</h1><p>Server is running<p>"
+                status_code = "200 OK"
+            elif path == "/test":
+                response_body = "<h1>Test Page</h1>"
+                status_code = "200 OK"
+            else:
+                response_body = "<h1>404 Not Found Error</h1>"
+                status_code = "404 Not Found"
+
+            #Forming and sending HTTP response
+            response = f"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-length: {len(response_body)}\r\nConnection: close\r\n\r\n"
+            response += response_body
         
+            client_socket.send(response.encode("utf-8"))
 
         except Exception as e:
             print(f"Error: {e}")
+        finally:
+            client_socket.close()
 
 # Run server
 if __name__ == '__main__':
