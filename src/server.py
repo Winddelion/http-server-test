@@ -96,7 +96,7 @@ class HTTPServer:
                 status_code = "404 Not Found"
 
             #Forming and sending HTTP response
-            response = f"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-length: {len(response_body)}\r\nConnection: close\r\n\r\n"
+            response = f"HTTP/1.1 {status_code}\r\nContent-Type: text/html\r\nContent-length: {len(response_body)}\r\nConnection: close\r\n\r\n"
             response += response_body
         
             client_socket.send(response.encode("utf-8"))
